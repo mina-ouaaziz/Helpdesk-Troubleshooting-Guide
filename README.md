@@ -21,274 +21,272 @@ Chaque fiche suit la structure : **Symptôme → Causes fréquentes → Étapes 
 ---
 
 ## 1. PC ne démarre pas
+Symptôme : L'ordinateur ne s'allume pas ou reste bloqué avant le chargement de Windows.
+Causes fréquentes :
 
-**Symptôme :** L'ordinateur ne s'allume pas ou reste bloqué avant le chargement de Windows.
+Câble d'alimentation débranché ou bloc d'alimentation défaillant
+RAM mal insérée ou défectueuse
+Disque dur défaillant
+Corruption du secteur de démarrage (MBR/GPT)
 
-**Causes fréquentes :**
-- Câble d'alimentation débranché ou bloc d'alimentation défaillant
-- RAM mal insérée ou défectueuse
-- Disque dur défaillant
-- Corruption du secteur de démarrage (MBR/GPT)
+Étapes de résolution :
 
-**Étapes de résolution :**
-1. Vérifier que le câble d'alimentation est bien branché (PC et prise murale)
-2. Vérifier que la prise est alimentée (tester avec un autre appareil)
-3. Retirer les périphériques USB et relancer
-4. Si le PC s'allume mais ne démarre pas Windows : booter sur un support USB Windows → `Réparer l'ordinateur` → `Réparation du démarrage`
-5. En ligne de commande (WinRE) :
-```
-bootrec /fixmbr
+Vérifier que le câble d'alimentation est bien branché (côté PC et côté prise)
+Tester la prise avec un autre appareil pour s'assurer qu'elle est bien alimentée
+Débrancher tous les périphériques USB et relancer
+Si le PC s'allume mais ne démarre pas Windows : booter sur un support USB Windows → Réparer l'ordinateur → Réparation du démarrage
+En ligne de commande (WinRE) :
+
+cmdbootrec /fixmbr
 bootrec /fixboot
 bootrec /rebuildbcd
-```
 
-**Escalade N2 si :** Disque dur non détecté au BIOS, erreurs matérielles répétées.
+⚠️ Note UEFI/GPT : Sur les machines récentes, bootrec /fixboot peut renvoyer une erreur "Accès refusé". Dans ce cas, tenter uniquement bootrec /rebuildbcd, ou vérifier que le volume EFI est bien monté avant de relancer la commande.
 
----
+Escalade N2 si : Disque dur non détecté au BIOS, erreurs matérielles répétées.
 
-## 2. Mot de passe oublié / compte AD verrouillé
+2. Mot de passe oublié / compte AD verrouillé
+Symptôme : L'utilisateur ne peut plus se connecter à sa session Windows ou à une application métier.
+Causes fréquentes :
 
-**Symptôme :** L'utilisateur ne peut plus se connecter à sa session Windows ou à une application métier.
+Mot de passe expiré
+Compte verrouillé après trop de tentatives échouées
+Touche Majuscule activée lors de la saisie (ça arrive plus souvent qu'on ne le croit)
 
-**Causes fréquentes :**
-- Mot de passe expiré
-- Compte verrouillé après trop de tentatives échouées
-- Majuscule activée lors de la saisie
+Étapes de résolution (côté admin AD) :
 
-**Étapes de résolution (côté admin AD) :**
-1. Ouvrir **Utilisateurs et ordinateurs Active Directory**
-2. Rechercher le compte utilisateur
-3. Clic droit → **Propriétés** → onglet **Compte**
-4. Décocher "Le compte est verrouillé" si applicable
-5. Cocher "L'utilisateur doit changer le mot de passe à la prochaine ouverture de session"
-6. Clic droit → **Réinitialiser le mot de passe** → fournir un mot de passe temporaire sécurisé
+Ouvrir Utilisateurs et ordinateurs Active Directory
+Rechercher le compte utilisateur
+Clic droit → Propriétés → onglet Compte
+Décocher "Le compte est verrouillé" si applicable
+Cocher "L'utilisateur doit changer le mot de passe à la prochaine ouverture de session"
+Clic droit → Réinitialiser le mot de passe → fournir un mot de passe temporaire sécurisé
 
-**Via PowerShell :**
-```powershell
-# Déverrouiller un compte
+Via PowerShell :
+powershell# Déverrouiller un compte
 Unlock-ADAccount -Identity "prenom.nom"
 
 # Réinitialiser le mot de passe
-Set-ADAccountPassword -Identity "prenom.nom" -Reset -NewPassword (ConvertTo-SecureString "MotDePasse!Tmp1" -AsPlainText -Force)
+# ⚠️ Remplacer par un mot de passe temporaire conforme à la politique de sécurité de l'entreprise
+# Ne jamais utiliser de vrais mots de passe dans un script versionné
+Set-ADAccountPassword -Identity "prenom.nom" -Reset -NewPassword (ConvertTo-SecureString "MotDePasseTmp_A_Changer!" -AsPlainText -Force)
 
 # Forcer le changement au prochain login
 Set-ADUser -Identity "prenom.nom" -ChangePasswordAtLogon $true
-```
+Escalade N2 si : Verrouillages répétés sans explication, suspicion de compromission de compte.
 
-**Escalade N2 si :** Verrouillages répétés sans explication, suspicion de compromission de compte.
+3. Imprimante non reconnue ou ne répond pas
+Symptôme : L'imprimante n'apparaît pas dans Windows ou les impressions restent bloquées dans la file.
+Causes fréquentes :
 
----
+Spouleur d'impression planté
+Driver corrompu ou absent
+Imprimante hors ligne ou déconnectée du réseau
 
-## 3. Imprimante non reconnue ou ne répond pas
+Étapes de résolution :
 
-**Symptôme :** L'imprimante n'apparaît pas dans Windows ou les impressions restent bloquées dans la file.
+Vérifier que l'imprimante est allumée et bien connectée (USB ou réseau)
+Vider la file d'impression et redémarrer le spouleur — lancer ces commandes dans une invite de commande administrateur :
 
-**Causes fréquentes :**
-- Spouleur d'impression planté
-- Driver corrompu ou absent
-- Imprimante hors ligne ou déconnectée du réseau
-
-**Étapes de résolution :**
-1. Vérifier que l'imprimante est allumée et connectée (USB ou réseau)
-2. Vider la file d'impression et redémarrer le spouleur :
-```cmd
-net stop spooler
+cmdnet stop spooler
 del /Q /F /S "%systemroot%\System32\spool\PRINTERS\*.*"
 net start spooler
-```
-3. Vérifier dans `Périphériques et imprimantes` que l'imprimante n'est pas en mode "Hors ligne"
-4. Désinstaller et réinstaller le driver depuis le site du constructeur
-5. Pour une imprimante réseau : vérifier que son IP est joignable via `ping [IP_imprimante]`
 
-**Escalade N2 si :** Problème persistant sur toutes les imprimantes du réseau, erreur de driver impossible à résoudre.
+Vérifier dans Périphériques et imprimantes que l'imprimante n'est pas en mode "Hors ligne"
+Désinstaller et réinstaller le driver depuis le site du constructeur
+Pour une imprimante réseau : vérifier que son IP est joignable via ping [IP_imprimante]
 
----
+Escalade N2 si : Problème persistant sur toutes les imprimantes du réseau, erreur de driver impossible à résoudre.
 
-## 4. Connexion VPN impossible
+4. Connexion VPN impossible
+Symptôme : L'utilisateur ne parvient pas à établir la connexion VPN depuis son domicile.
+Causes fréquentes :
 
-**Symptôme :** L'utilisateur ne parvient pas à établir la connexion VPN depuis son domicile.
+Mauvais identifiants ou certificat expiré
+Port VPN bloqué par le pare-feu local ou le FAI
+Client VPN corrompu
+Adresse du serveur VPN incorrecte
 
-**Causes fréquentes :**
-- Mauvaises identifiants ou certificat expiré
-- Port VPN bloqué par le pare-feu local ou FAI
-- Client VPN corrompu
-- Adresse du serveur VPN incorrecte
+Étapes de résolution :
 
-**Étapes de résolution :**
-1. Vérifier que l'utilisateur a accès à Internet sans VPN
-2. Vérifier les identifiants (login, mot de passe, domaine)
-3. Vérifier que le client VPN est à jour
-4. Désactiver temporairement le pare-feu Windows et retenter
-5. Vérifier l'adresse du serveur VPN dans la configuration du client
-6. Tenter depuis un autre réseau (partage de connexion mobile) pour isoler un blocage FAI
-7. Réinstaller le client VPN si nécessaire
+Vérifier que l'utilisateur a bien accès à Internet sans VPN
+Vérifier les identifiants (login, mot de passe, domaine)
+S'assurer que le client VPN est à jour
+Désactiver temporairement le pare-feu Windows et retenter
+Vérifier l'adresse du serveur VPN dans la configuration du client
+Tenter depuis un autre réseau (partage de connexion mobile) — si ça fonctionne, le problème vient du FAI ou du réseau local
+Réinstaller le client VPN si nécessaire
 
-**Escalade N2 si :** Le serveur VPN est inaccessible depuis plusieurs utilisateurs simultanément (incident global), ou problème de certificat côté serveur.
+Escalade N2 si : Le serveur VPN est inaccessible depuis plusieurs utilisateurs en même temps (incident global), ou problème de certificat côté serveur.
 
----
+5. Profil Windows corrompu
+Symptôme : À la connexion, message "Vous avez été connecté avec un profil temporaire" ou bureau vide avec applications manquantes.
+Causes fréquentes :
 
-## 5. Profil Windows corrompu
+Arrêt brutal du PC pendant une mise à jour
+Profil utilisateur corrompu dans la base de registre
+Disque dur avec secteurs défectueux
 
-**Symptôme :** À la connexion, message "Vous avez été connecté avec un profil temporaire" ou bureau vide avec applications manquantes.
+Étapes de résolution :
 
-**Causes fréquentes :**
-- Arrêt brutal du PC lors d'une mise à jour
-- Profil utilisateur corrompu dans la base de registre
-- Disque dur avec secteurs défectueux
+Redémarrer le PC et retenter la connexion (parfois ça suffit)
+Se connecter avec un compte administrateur local
+Ouvrir regedit → naviguer vers :
 
-**Étapes de résolution :**
-1. Redémarrer le PC et retenter la connexion (peut suffire)
-2. Se connecter avec un compte administrateur local
-3. Ouvrir `regedit` → naviguer vers :
-```
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList
-```
-4. Identifier la clé correspondant au profil (SID de l'utilisateur)
-5. Si une clé avec `.bak` est présente : renommer la clé sans `.bak` en ajoutant `.old`, puis supprimer le `.bak` de l'autre
-6. Redémarrer et retenter la connexion
-7. Si le profil est irrécupérable : créer un nouveau profil et migrer les données depuis `C:\Users\ancienProfil`
 
-**Escalade N2 si :** Corruption matérielle suspectée (lancer `chkdsk /f /r` au préalable).
+Identifier la clé correspondant au profil corrompu (SID de l'utilisateur)
+Si deux clés existent — l'une avec .bak, l'autre sans — voici la procédure dans l'ordre :
 
----
+Renommer la clé sans .bak en y ajoutant .old (ex: S-1-5-21-xxxx → S-1-5-21-xxxx.old)
+Renommer la clé avec .bak en supprimant le .bak (ex: S-1-5-21-xxxx.bak → S-1-5-21-xxxx)
 
-## 6. Pas d'accès Internet
 
-**Symptôme :** Le navigateur affiche "Pas d'accès Internet" ou "DNS_PROBE_FINISHED".
+Redémarrer et retenter la connexion avec le compte utilisateur
+Si le profil est irrécupérable : créer un nouveau profil et migrer les données depuis C:\Users\ancienProfil
 
-**Causes fréquentes :**
-- Carte réseau désactivée
-- Configuration IP incorrecte (IP fixe mal renseignée)
-- Problème DNS
-- Câble réseau débranché ou défaillant
+Escalade N2 si : Corruption matérielle suspectée — lancer chkdsk /f /r au préalable pour vérifier l'état du disque.
 
-**Étapes de résolution :**
-1. Vérifier l'icône réseau dans la barre des tâches
-2. `ipconfig /all` → vérifier qu'une IP cohérente est attribuée
-3. Tenter un `ping 8.8.8.8` (Google DNS) → si ça répond, le problème est DNS
-4. Si problème DNS :
-```cmd
-ipconfig /flushdns
+6. Pas d'accès Internet
+Symptôme : Le navigateur affiche "Pas d'accès Internet" ou "DNS_PROBE_FINISHED".
+Causes fréquentes :
+
+Carte réseau désactivée
+Configuration IP incorrecte (IP fixe mal renseignée)
+Problème DNS
+Câble réseau débranché ou défaillant
+
+Étapes de résolution :
+
+Vérifier l'icône réseau dans la barre des tâches
+ipconfig /all → vérifier qu'une IP cohérente est attribuée
+Tenter un ping 8.8.8.8 (DNS Google) → si ça répond, la connectivité réseau est OK mais le DNS est en cause
+Si problème DNS :
+
+cmdipconfig /flushdns
 netsh winsock reset
-```
-5. Si pas de réponse au ping : `ipconfig /release` puis `ipconfig /renew`
-6. Désactiver/réactiver la carte réseau dans le Gestionnaire de périphériques
-7. Tester avec un autre câble ou en Wi-Fi pour isoler le problème matériel
 
-**Escalade N2 si :** Plusieurs postes touchés simultanément (problème infrastructure), ou si le serveur DHCP ne répond plus.
+⚠️ netsh winsock reset nécessite un redémarrage pour prendre effet.
 
----
 
-## 7. Écran bleu (BSOD)
+Si le ping ne répond pas : ipconfig /release puis ipconfig /renew
+Désactiver puis réactiver la carte réseau dans le Gestionnaire de périphériques
+Tester avec un autre câble ou en Wi-Fi pour éliminer une cause matérielle
 
-**Symptôme :** Écran bleu avec un code d'erreur, redémarrage automatique du PC.
+Escalade N2 si : Plusieurs postes touchés simultanément (problème infrastructure), ou si le serveur DHCP ne répond plus.
 
-**Causes fréquentes :**
-- Driver incompatible ou corrompu (souvent après une mise à jour)
-- RAM défectueuse
-- Surchauffe du matériel
-- Infection malware
+7. Écran bleu (BSOD)
+Symptôme : Écran bleu avec un code d'erreur, redémarrage automatique du PC.
+Causes fréquentes :
 
-**Étapes de résolution :**
-1. Noter le code d'erreur affiché (ex: `IRQL_NOT_LESS_OR_EQUAL`, `PAGE_FAULT_IN_NONPAGED_AREA`)
-2. Analyser le fichier de dump : `C:\Windows\Minidump` avec **WinDbg** ou **BlueScreenView**
-3. Identifier le driver incriminé et le mettre à jour ou le désinstaller
-4. Vérifier la RAM avec **Windows Memory Diagnostic** :
-```cmd
-mdsched.exe
-```
-5. Vérifier les températures avec **HWMonitor** ou **Core Temp**
-6. Si récent après mise à jour : restaurer le système à un point antérieur
+Driver incompatible ou corrompu (souvent après une mise à jour)
+RAM défectueuse
+Surchauffe du matériel
+Infection malware
 
-**Escalade N2 si :** BSOD répétés sans cause identifiable, suspicion de panne matérielle.
+Étapes de résolution :
 
----
+Noter le code d'erreur affiché (ex: IRQL_NOT_LESS_OR_EQUAL, PAGE_FAULT_IN_NONPAGED_AREA)
+Analyser le fichier de dump dans C:\Windows\Minidump avec WinDbg ou BlueScreenView (outil tiers NirSoft, gratuit)
+Identifier le driver incriminé et le mettre à jour ou le désinstaller
+Vérifier la RAM avec l'outil intégré Windows :
 
-## 8. Messagerie Outlook ne se synchronise plus
+cmdmdsched.exe
 
-**Symptôme :** Les emails ne se chargent plus, Outlook affiche "Déconnecté" ou "Tentative de connexion".
+Vérifier les températures avec HWMonitor ou Core Temp
+Si le BSOD est apparu après une mise à jour récente : restaurer le système à un point de restauration antérieur
 
-**Causes fréquentes :**
-- Fichier OST/PST corrompu
-- Mot de passe expiré
-- Profil Outlook corrompu
-- Problème de connectivité Exchange
+Escalade N2 si : BSOD répétés sans cause identifiable, suspicion de panne matérielle.
 
-**Étapes de résolution :**
-1. Vérifier la connexion Internet
-2. Vérifier que le mot de passe n'est pas expiré (tester sur OWA)
-3. Réparer le fichier de données Outlook :
-   - `Fichier` → `Paramètres du compte` → `Fichiers de données` → `Ouvrir l'emplacement du fichier`
-   - Lancer `SCANPST.EXE` sur le fichier .ost/.pst
-4. Supprimer et recréer le profil Outlook :
-   - `Panneau de configuration` → `Courrier` → `Afficher les profils` → `Ajouter`
-5. Vérifier l'état du service Exchange avec l'équipe N2
+8. Messagerie Outlook ne se synchronise plus
+Symptôme : Les emails ne se chargent plus, Outlook affiche "Déconnecté" ou "Tentative de connexion".
+Causes fréquentes :
 
-**Escalade N2 si :** Problème global sur plusieurs utilisateurs, erreur côté serveur Exchange/O365.
+Fichier OST/PST corrompu
+Mot de passe expiré
+Profil Outlook corrompu
+Problème de connectivité Exchange
 
----
+Étapes de résolution :
 
-## 9. Partage réseau inaccessible
+Vérifier la connexion Internet
+Tester si le mot de passe fonctionne sur OWA (Outlook Web App) — si ça bloque là aussi, c'est le mot de passe
+Réparer le fichier de données Outlook :
 
-**Symptôme :** L'utilisateur ne peut pas accéder à un lecteur réseau mappé ou à un dossier partagé.
+Fichier → Paramètres du compte → Fichiers de données → Ouvrir l'emplacement du fichier
+Lancer SCANPST.EXE sur le fichier .ost ou .pst
 
-**Causes fréquentes :**
-- Session expirée ou mot de passe changé
-- Lecteur réseau non remappé après redémarrage
-- Problème de droits NTFS ou de partage
-- Serveur de fichiers hors ligne
 
-**Étapes de résolution :**
-1. Tester l'accès direct via `\\serveur\partage` dans l'explorateur
-2. Vérifier que le serveur est joignable : `ping [nom_serveur]`
-3. Vérifier les identifiants dans le gestionnaire d'informations d'identification Windows
-4. Remapper le lecteur manuellement :
-```cmd
-net use Z: \\serveur\partage /persistent:yes
-```
-5. Vérifier les droits avec un compte admin sur le dossier partagé
+Si ça ne suffit pas, supprimer et recréer le profil Outlook :
 
-**Escalade N2 si :** Serveur de fichiers inaccessible pour tous les utilisateurs, problème de droits complexe.
+Panneau de configuration → Courrier → Afficher les profils → Ajouter
 
----
 
-## 10. PC lent / performances dégradées
+Vérifier l'état du service Exchange avec l'équipe N2
 
-**Symptôme :** Le PC met du temps à démarrer, les applications rament, le système est globalement lent.
+Escalade N2 si : Problème global touchant plusieurs utilisateurs, erreur côté serveur Exchange/O365.
 
-**Causes fréquentes :**
-- Disque dur presque plein
-- Trop de programmes au démarrage
-- Malware ou processus parasite
-- RAM insuffisante
-- Disque dur mécanique défaillant (HDD)
+9. Partage réseau inaccessible
+Symptôme : L'utilisateur ne peut pas accéder à un lecteur réseau mappé ou à un dossier partagé.
+Causes fréquentes :
 
-**Étapes de résolution :**
-1. Vérifier l'espace disque disponible (minimum 10% libre recommandé)
-2. Lancer le nettoyage de disque : `cleanmgr`
-3. Désactiver les programmes inutiles au démarrage :
-   - `Gestionnaire des tâches` → onglet `Démarrage`
-4. Vérifier les processus gourmands dans le Gestionnaire des tâches (CPU/RAM)
-5. Lancer une analyse antivirus complète
-6. Vérifier l'état du disque :
-```cmd
-wmic diskdrive get status
-chkdsk C: /f /r
-```
-7. Vérifier les températures (surchauffe = throttling)
+Session expirée ou mot de passe changé récemment
+Lecteur réseau non remappé après un redémarrage
+Problème de droits NTFS ou de partage
+Serveur de fichiers hors ligne
 
-**Escalade N2 si :** Disque dur en état critique, remplacement de RAM nécessaire.
+Étapes de résolution :
 
----
+Tester l'accès direct via \\serveur\partage dans l'explorateur de fichiers
+Vérifier que le serveur répond : ping [nom_serveur]
+Vérifier (et mettre à jour si besoin) les identifiants dans le Gestionnaire d'informations d'identification Windows
+Remapper le lecteur manuellement :
 
-## 📌 Bonnes pratiques générales
+cmdnet use Z: \\serveur\partage /persistent:yes
 
-- **Toujours commencer par le plus simple** : câble, redémarrage, droits utilisateur
-- **Documenter chaque intervention** dans l'outil ITSM (GLPI, ServiceNow…)
-- **Ne jamais intervenir sans accord de l'utilisateur** sur ses données
-- **Escalader sans hésiter** si la résolution dépasse 20 minutes sans avancée
+Vérifier les droits avec un compte admin sur le dossier partagé
+
+Escalade N2 si : Serveur de fichiers inaccessible pour tous les utilisateurs, problème de droits complexe à démêler.
+
+10. PC lent / performances dégradées
+Symptôme : Le PC met du temps à démarrer, les applications rament, le système est globalement lent.
+Causes fréquentes :
+
+Disque dur presque plein
+Trop de programmes au démarrage
+Malware ou processus parasite
+RAM insuffisante
+Disque dur mécanique défaillant (HDD)
+
+Étapes de résolution :
+
+Vérifier l'espace disque disponible — en dessous de 10% libre, les performances chutent
+Lancer le nettoyage de disque : cleanmgr
+Désactiver les programmes inutiles au démarrage :
+
+Gestionnaire des tâches → onglet Démarrage
+
+
+Repérer les processus gourmands dans le Gestionnaire des tâches (CPU/RAM)
+Lancer une analyse antivirus complète
+Vérifier l'état du disque :
+
+cmdchkdsk C: /f /r
+Ou via PowerShell (recommandé sur Windows 10/11) :
+powershellGet-PhysicalDisk | Select FriendlyName, HealthStatus
+
+Vérifier les températures — une surchauffe entraîne du throttling et ralentit tout
+
+Escalade N2 si : Disque dur en état critique, remplacement de RAM nécessaire.
+
+📌 Bonnes pratiques générales
+
+Commencer par le plus simple : câble, redémarrage, droits utilisateur — ça résout 80% des tickets
+Documenter chaque intervention dans l'outil ITSM (GLPI, ServiceNow…)
+Ne jamais toucher aux données d'un utilisateur sans son accord
+Escalader sans hésiter si après 20 minutes on n'avance plus — ce n'est pas un aveu d'échec, c'est de la bonne gestion d'incident
 
 ---
 
 *Rédigé par Mina Ouaaziz — Technicienne Systèmes & Réseaux*  
-*Compétences : Windows Server, Active Directory, pfSense, Proxmox, GLPI, Zabbix*
+*Compétences : Windows Server · Active Directory · pfSense · Proxmox · GLPI · Zabbix · PowerShell

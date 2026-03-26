@@ -315,6 +315,9 @@ Get-PhysicalDisk | Select FriendlyName, HealthStatus
 
 ---
 
-Auteure
-Mina OUAAZIZ — Technicienne Supérieure Systèmes et Réseaux
+---
+
+## Auteure
+
+**Mina OUAAZIZ** — Technicienne Supérieure Systèmes et Réseaux  
 Passionnée par la cybersécurité défensive, l'administration système et le support IT.

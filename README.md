@@ -315,8 +315,6 @@ Get-PhysicalDisk | Select FriendlyName, HealthStatus
 
 ---
 
----
-
 ## Auteure
 
 **Mina OUAAZIZ** — Technicienne Supérieure Systèmes et Réseaux  
